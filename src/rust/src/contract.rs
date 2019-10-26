@@ -30,8 +30,9 @@ pub fn reject<'a>(message: &'a str) -> ! {
     exit(EXIT_REJECTED)
 }
 
-/// Macro that provide simplified access to the [`accept`] function. The arguments
-/// to this macro can be empty or the same as those arguments to the `format!` macro.
+/// Macro that provide simplified access to the [`accept`] function. The 
+/// arguments to this macro can be empty or the same as those arguments to the 
+/// `format!` macro.
 #[macro_export]
 macro_rules! accept {
     () => {
@@ -42,8 +43,9 @@ macro_rules! accept {
     };
 }
 
-/// Macro that provide simplified access to the [`reject`] function. The arguments
-/// to this macro are the same as those arguments to the `format!` macro.
+/// Macro that provide simplified access to the [`reject`] function. The 
+/// arguments to this macro are the same as those arguments to the `format!` 
+/// macro.
 #[macro_export]
 macro_rules! reject {
     ($($arg:tt)*) => {
@@ -60,6 +62,22 @@ impl<T: TokenizedRead> JudgeReader<T> {
     /// Get the inner reader of the [`JudgeReader`] instance.
     pub fn inner_reader(&mut self) -> &mut T {
         &mut self.inner
+    }
+
+    /// Read one token from the underlying reader.
+    pub fn read_token(&mut self) -> Option<String> {
+        self.inner.read_token()
+    }
+
+    /// Read one token from the underlying reader and convert it to the given
+    /// type. Panics if the token read cannot be converted to the given type.
+    /// Returns `None` if the underlying reader returns `None`.
+    pub fn read_token_as<U>(&mut self) -> Option<U>
+        where U: FromStr {
+        self.read_token()
+            .map(|token| U::from_str(token.as_str())
+                .ok()
+                .expect("failed to convert token to the given type."))
     }
 
     /// Expect the next token from the inner reader to be the given value's 
@@ -87,8 +105,10 @@ impl<T: TokenizedRead> JudgeReader<T> {
         token
     }
 
-    /// Expect the next token from the inner reader can be converted to the given type.
-    pub fn expect_type<U: FromStr>(&mut self) -> U {
+    /// Expect the next token from the inner reader can be converted to the 
+    /// given type.
+    pub fn expect_type<U>(&mut self) -> U
+        where U: FromStr {
         let token = match self.inner.read_token() {
             Some(token) => token,
             None => reject!("Unexpected EOF.")
@@ -99,8 +119,8 @@ impl<T: TokenizedRead> JudgeReader<T> {
         }
     }
 
-    /// Expect the next token from the inner reader can be converted to the given type
-    /// and satisfies the given predicate.
+    /// Expect the next token from the inner reader can be converted to the 
+    /// given type and satisfies the given predicate.
     pub fn expect_value_that<U, F, E>(&mut self, predicate: F) -> U
         where U: FromStr + Display,
               F: FnOnce(&U) -> Result<(), E>,
@@ -114,7 +134,8 @@ impl<T: TokenizedRead> JudgeReader<T> {
                 match predicate(&token_value) {
                     Ok(..) => token_value,
                     Err(err) => {
-                        reject!("Unexpected value: \"{}\": {:?}", token_value, err)
+                        reject!("Unexpected value: \"{}\": {:?}", 
+                            token_value, err)
                     }
                 }
             },
@@ -122,8 +143,8 @@ impl<T: TokenizedRead> JudgeReader<T> {
         }
     }
 
-    /// Expect the next token from the inner reader can be converted to the given type
-    /// and equals the given value.
+    /// Expect the next token from the inner reader can be converted to the 
+    /// given type and equals the given value.
     pub fn expect_eq<U, V>(&mut self, value: &V) -> U
         where U: FromStr + PartialEq<V> + Display, 
               V: ?Sized + Display {
@@ -134,8 +155,8 @@ impl<T: TokenizedRead> JudgeReader<T> {
         })
     }
 
-    /// Expect the next token from the given reader can be converted to the given type
-    /// but not equals to the given value.
+    /// Expect the next token from the given reader can be converted to the 
+    /// given type but not equals to the given value.
     pub fn expect_ne<U, V>(&mut self, value: &V) -> U
         where U: FromStr + PartialEq<V> + Display,
               V: ?Sized + Display {
@@ -146,22 +167,26 @@ impl<T: TokenizedRead> JudgeReader<T> {
         })
     }
 
-    /// Expect the next token from the inner reader can be converted to `f64` and equals
-    /// to the given value with an absolute tolerance.
+    /// Expect the next token from the inner reader can be converted to `f64` 
+    /// and equals to the given value with an absolute tolerance.
     pub fn expect_float_eq(&mut self, expected: f64, tolerance: f64) -> f64 {
-        self.expect_value_that(|value: &f64| match compare_floats(*value, expected, tolerance) {
-            Some(Ordering::Equal) => Ok(()),
-            _ => Err(format!("expected \"{}\", found \"{}\"", expected, *value))
-        })
+        self.expect_value_that(|value: &f64| 
+            match compare_floats(*value, expected, tolerance) {
+                Some(Ordering::Equal) => Ok(()),
+                _ => Err(format!("expected \"{}\", found \"{}\"", 
+                    expected, *value))
+            })
     }
 
-    /// Expect the next token from the inner reader can be converted to `f64` but not
-    /// equals to the given value with an absolute tolerance.
+    /// Expect the next token from the inner reader can be converted to `f64` 
+    /// but not equals to the given value with an absolute tolerance.
     pub fn expect_float_ne(&mut self, expected: f64, tolerance: f64) -> f64 {
-        self.expect_value_that(|value: &f64| match compare_floats(*value, expected, tolerance) {
-            Some(Ordering::Equal) => Err(format!("unexpected value: \"{}\"", *value)),
-            _ => Ok(())
-        })
+        self.expect_value_that(|value: &f64| 
+            match compare_floats(*value, expected, tolerance) {
+                Some(Ordering::Equal) => Err(format!("unexpected value: \"{}\"", 
+                    *value)),
+                _ => Ok(())
+            })
     }
 
     /// Expect EOF has been hit on the inner reader.
